@@ -2,79 +2,70 @@ import React, { useState } from 'react';
 
 export default function MainComponent() {
   const [projects, setProjects] = useState([
-    { id: 1, name: 'Project 1', description: 'Description 1', status: 'In Progress' },
-    { id: 2, name: 'Project 2', description: 'Description 2', status: 'Done' },
+    { id: 1, title: 'Project 1', description: 'Description 1', status: 'In Progress' },
+    { id: 2, title: 'Project 2', description: 'Description 2', status: 'Done' },
   ]);
-  const [newProject, setNewProject] = useState({ name: '', description: '', status: '' });
-  const [errors, setErrors] = useState({ name: '', description: '', status: '' });
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingProject, setEditingProject] = useState({});
+  const [newProject, setNewProject] = useState({ title: '', description: '' });
+  const [editingProject, setEditingProject] = useState(null);
+  const [stats, setStats] = useState({
+    totalProjects: projects.length,
+    inProgress: projects.filter((project) => project.status === 'In Progress').length,
+    done: projects.filter((project) => project.status === 'Done').length,
+  });
 
-  const handleCreateProject = (e) => {
-    e.preventDefault();
-    if (!newProject.name || !newProject.description || !newProject.status) {
-      setErrors({
-        name: !newProject.name ? 'Name is required' : '',
-        description: !newProject.description ? 'Description is required' : '',
-        status: !newProject.status ? 'Status is required' : '',
-      });
-      return;
+  const handleAddProject = () => {
+    if (newProject.title && newProject.description) {
+      setProjects([...projects, { id: projects.length + 1, ...newProject, status: 'In Progress' }]);
+      setNewProject({ title: '', description: '' });
     }
-    setProjects([...projects, { id: projects.length + 1, ...newProject, status: 'In Progress' }]);
-    setNewProject({ name: '', description: '', status: '' });
-    setErrors({ name: '', description: '', status: '' });
   };
 
   const handleEditProject = (project) => {
-    setIsEditing(true);
     setEditingProject(project);
   };
 
-  const handleUpdateProject = (e) => {
-    e.preventDefault();
-    if (!editingProject.name || !editingProject.description || !editingProject.status) {
-      setErrors({
-        name: !editingProject.name ? 'Name is required' : '',
-        description: !editingProject.description ? 'Description is required' : '',
-        status: !editingProject.status ? 'Status is required' : '',
+  const handleUpdateProject = () => {
+    if (editingProject) {
+      const updatedProjects = projects.map((project) => {
+        if (project.id === editingProject.id) {
+          return editingProject;
+        }
+        return project;
       });
-      return;
+      setProjects(updatedProjects);
+      setEditingProject(null);
     }
-    const updatedProjects = projects.map((project) =>
-      project.id === editingProject.id ? editingProject : project
-    );
+  };
+
+  const handleDeleteProject = (projectId) => {
+    const updatedProjects = projects.filter((project) => project.id !== projectId);
     setProjects(updatedProjects);
-    setIsEditing(false);
-    setEditingProject({});
-    setErrors({ name: '', description: '', status: '' });
   };
 
-  const handleDeleteProject = (id) => {
-    setProjects(projects.filter((project) => project.id !== id));
+  const handleStatusChange = (projectId, status) => {
+    const updatedProjects = projects.map((project) => {
+      if (project.id === projectId) {
+        return { ...project, status };
+      }
+      return project;
+    });
+    setProjects(updatedProjects);
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    if (isEditing) {
+  const handleInputChange = (event) => {
+    const { name, value } = event.target;
+    if (editingProject) {
       setEditingProject({ ...editingProject, [name]: value });
     } else {
       setNewProject({ ...newProject, [name]: value });
     }
   };
 
-  const handleStatusChange = (e) => {
-    const { value } = e.target;
-    if (isEditing) {
+  const handleStatusSelect = (event) => {
+    const { value } = event.target;
+    if (editingProject) {
       setEditingProject({ ...editingProject, status: value });
-    } else {
-      setNewProject({ ...newProject, status: value });
     }
-  };
-
-  const stats = {
-    totalProjects: projects.length,
-    inProgress: projects.filter((project) => project.status === 'In Progress').length,
-    done: projects.filter((project) => project.status === 'Done').length,
   };
 
   return (
@@ -96,36 +87,38 @@ export default function MainComponent() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
         {projects.map((project) => (
           <div key={project.id} style={{ background: '#0d1220', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px' }}>
-            <h2 style={{ color: '#f1f5f9', fontSize: '18px', fontWeight: '600' }}>{project.name}</h2>
+            <h2 style={{ color: '#f1f5f9', fontSize: '18px', fontWeight: '600' }}>{project.title}</h2>
             <p style={{ color: '#94a3b8', fontSize: '14px' }}>{project.description}</p>
             <p style={{ color: '#94a3b8', fontSize: '14px' }}>Status: {project.status}</p>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <button style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }} onClick={() => handleEditProject(project)}>Edit</button>
               <button style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: '#94a3b8', borderRadius: '8px', padding: '10px 20px', cursor: 'pointer' }} onClick={() => handleDeleteProject(project.id)}>Delete</button>
+              <select style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '10px 14px', color: '#f1f5f9', fontSize: '14px', outline: 'none' }} value={project.status} onChange={(event) => handleStatusChange(project.id, event.target.value)}>
+                <option value="In Progress">In Progress</option>
+                <option value="Done">Done</option>
+              </select>
             </div>
           </div>
         ))}
-        {projects.length === 0 && (
-          <div style={{ background: '#0d1220', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px', gridColumn: '1 / -1' }}>
-            <p style={{ color: '#94a3b8', fontSize: '14px' }}>No projects found.</p>
+        {editingProject ? (
+          <div style={{ background: '#0d1220', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px' }}>
+            <h2 style={{ color: '#f1f5f9', fontSize: '18px', fontWeight: '600' }}>Edit Project</h2>
+            <input style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '10px 14px', color: '#f1f5f9', fontSize: '14px', outline: 'none', width: '100%' }} type="text" name="title" value={editingProject.title} onChange={handleInputChange} />
+            <input style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '10px 14px', color: '#f1f5f9', fontSize: '14px', outline: 'none', width: '100%', marginTop: '12px' }} type="text" name="description" value={editingProject.description} onChange={handleInputChange} />
+            <select style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '10px 14px', color: '#f1f5f9', fontSize: '14px', outline: 'none', width: '100%', marginTop: '12px' }} value={editingProject.status} onChange={handleStatusSelect}>
+              <option value="In Progress">In Progress</option>
+              <option value="Done">Done</option>
+            </select>
+            <button style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', fontWeight: '600', fontSize: '14px', cursor: 'pointer', marginTop: '12px' }} onClick={handleUpdateProject}>Update</button>
+          </div>
+        ) : (
+          <div style={{ background: '#0d1220', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px' }}>
+            <h2 style={{ color: '#f1f5f9', fontSize: '18px', fontWeight: '600' }}>Add Project</h2>
+            <input style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '10px 14px', color: '#f1f5f9', fontSize: '14px', outline: 'none', width: '100%' }} type="text" name="title" value={newProject.title} onChange={handleInputChange} />
+            <input style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '10px 14px', color: '#f1f5f9', fontSize: '14px', outline: 'none', width: '100%', marginTop: '12px' }} type="text" name="description" value={newProject.description} onChange={handleInputChange} />
+            <button style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', fontWeight: '600', fontSize: '14px', cursor: 'pointer', marginTop: '12px' }} onClick={handleAddProject}>Add</button>
           </div>
         )}
-      </div>
-      <div style={{ background: '#0d1220', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '24px', marginTop: '24px' }}>
-        <h2 style={{ color: '#f1f5f9', fontSize: '18px', fontWeight: '600' }}>{isEditing ? 'Edit Project' : 'Create Project'}</h2>
-        <form onSubmit={isEditing ? handleUpdateProject : handleCreateProject}>
-          <input style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '10px 14px', color: '#f1f5f9', fontSize: '14px', outline: 'none', width: '100%' }} type="text" name="name" value={isEditing ? editingProject.name : newProject.name} onChange={handleInputChange} placeholder="Name" />
-          {errors.name && <p style={{ color: '#f1f5f9', fontSize: '14px', marginTop: '6px' }}>{errors.name}</p>}
-          <input style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '10px 14px', color: '#f1f5f9', fontSize: '14px', outline: 'none', width: '100%', marginTop: '12px' }} type="text" name="description" value={isEditing ? editingProject.description : newProject.description} onChange={handleInputChange} placeholder="Description" />
-          {errors.description && <p style={{ color: '#f1f5f9', fontSize: '14px', marginTop: '6px' }}>{errors.description}</p>}
-          <select style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '10px 14px', color: '#f1f5f9', fontSize: '14px', outline: 'none', width: '100%', marginTop: '12px' }} name="status" value={isEditing ? editingProject.status : newProject.status} onChange={handleStatusChange}>
-            <option value="">Select Status</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Done">Done</option>
-          </select>
-          {errors.status && <p style={{ color: '#f1f5f9', fontSize: '14px', marginTop: '6px' }}>{errors.status}</p>}
-          <button style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', fontWeight: '600', fontSize: '14px', cursor: 'pointer', marginTop: '12px' }} type="submit">{isEditing ? 'Update Project' : 'Create Project'}</button>
-        </form>
       </div>
     </div>
   );
